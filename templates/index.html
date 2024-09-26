@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flight Delay Prediction</title>
+    <style>
+      body {
+        background-color: #121212; /* Black theme */
+        color: #ffffff;
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .hero {
+        display: flex;
+        flex-direction: row;
+        width: 90%;
+        max-width: 1200px;
+        height: 80vh;
+        background-color: #070707;
+        border-radius: 15px;
+        overflow: hidden;
+      }
+
+      .hero .left {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-image: url("{{ url_for('static', filename='images/blckbgplane.jpg') }}");
+        background-size: cover;
+        background-position: center;
+        padding: 40px;
+      }
+
+      .hero .left h1 {
+        color: #ffffff;
+        font-size: 3rem;
+        margin-bottom: 20px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+      }
+
+      .hero .right {
+        width: 50%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 40px;
+        background-color: #060606;
+      }
+
+      .hero .right h2 {
+        color: #ffffff;
+        font-size: 2rem;
+        margin-bottom: 30px;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group select,
+      .form-group input {
+        width: 100%; /* Full width */
+        padding: 10px;
+        background-color: #222;
+        border: 1px solid #444;
+        border-radius: 5px;
+        color: white;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 1rem;
+        color: #ccc;
+      }
+
+      /* Align STD and STA in the same row */
+      .form-group-inline {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+      }
+
+      .form-group-inline label {
+        flex: 1;
+        margin-right: 10px;
+      }
+
+      .form-group-inline input {
+        flex: 1;
+        margin-right: 10px;
+      }
+
+      .form-group-inline input:last-child {
+        margin-right: 0; /* Remove margin from the last input */
+      }
+
+      button {
+        width: 100%;
+        padding: 15px;
+        border: none;
+        border-radius: 5px;
+        background-color: #444;
+        color: white;
+        font-size: 1.2rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #555;
+      }
+
+      .prediction-message {
+        margin-top: 30px;
+        font-size: 1.5rem;
+        color: #ff9900; /* Default message color */
+      }
+
+      .highlight {
+        font-weight: bold;
+        font-size: 1.8rem; /* Increased font size */
+      }
+
+      /* Additional styling for prediction color */
+      {% if prediction == 0 %}
+        .prediction-message {
+          color: green; /* Color for no delay */
+        }
+      {% elif prediction == 1 %}
+        .prediction-message {
+          color: red; /* Color for delay */
+        }
+      {% endif %}
+    </style>
+  </head>
+  <body>
+    <div class="hero">
+      <div class="left">
+        <h1>Is Your Flight On Time?</h1>
+      </div>
+
+      <div class="right">
+        <form method="POST">
+          <div class="form-group">
+            <label for="from_city">From City</label>
+            <select name="from_city" id="from_city" required>
+              <option value="">From City</option>
+              <option value="AMD">Ahmedabad (AMD)</option>
+              <option value="ATQ">Amritsar (ATQ)</option>
+              <option value="BBI">Bhubaneswar (BBI)</option>
+              <!-- Add more cities -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="to_city">To City</label>
+            <select name="to_city" id="to_city" required>
+              <option value="">To City</option>
+              <option value="AGR">Agra (AGR)</option>
+              <option value="AMD">Ahmedabad (AMD)</option>
+              <option value="BBI">Bhubaneswar (BBI)</option>
+              <!-- Add more cities -->
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="date">Flight Date</label>
+            <input type="date" name="date" id="date" required />
+          </div>
+
+          <div class="form-group-inline">
+            <div class="form-group">
+              <label for="std">Scheduled Time of Departure (STD)</label>
+              <input type="time" name="std" id="std" required />
+            </div>
+
+            <div class="form-group">
+              <label for="sta">Scheduled Time of Arrival (STA)</label>
+              <input type="time" name="sta" id="sta" required />
+            </div>
+          </div>
+
+          <button type="submit">Predict</button>
+        </form>
+
+        {% if prediction_message is not none %}
+        <div class="prediction-message">{{ prediction_message | safe }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
