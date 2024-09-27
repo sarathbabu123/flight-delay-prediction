@@ -7,8 +7,8 @@ app = Flask(__name__)
 
 # Load your model, PCA transformer, and scaler
 model = joblib.load("models/binaryclassrandomsearchmodelrf.joblib")
-pca = joblib.load("models\pca_transformer.joblib")
-scaler = joblib.load("models\scaler.joblib")
+pca = joblib.load("models/pca_transformer.joblib")
+scaler = joblib.load("models/scaler.joblib")
 
 
 # Function to preprocess the input data
