@@ -6,9 +6,9 @@ from datetime import datetime
 app = Flask(__name__)
 
 # Load your model, PCA transformer, and scaler
-model = joblib.load("models\\binaryclassrandomsearchmodelrf.joblib")
-pca = joblib.load("models\pca_transformer.joblib")
-scaler = joblib.load("models\scaler.joblib")
+model = joblib.load("models/binaryclassrandomsearchmodelrf.joblib")
+pca = joblib.load("models/pca_transformer.joblib")
+scaler = joblib.load("models/scaler.joblib")
 
 
 # Function to preprocess the input data
@@ -64,5 +64,5 @@ def index():
 
     return render_template('index.html', prediction_message=prediction_message, prediction=prediction)
 
-if __name__ == "__main__":
-    app.run(debug=True)
+# if __name__ == "__main__":
+#     app.run(debug=True)
