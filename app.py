@@ -1,8 +1,7 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request
 import joblib
 import pandas as pd
 from datetime import datetime
-from werkzeug.exceptions import BadRequest
 
 app = Flask(__name__)
 
@@ -11,6 +10,7 @@ model = joblib.load("models/binaryclassrandomsearchmodelrf.joblib")
 pca = joblib.load("models/pca_transformer.joblib")
 scaler = joblib.load("models/scaler.joblib")
 
+# Function to preprocess the input data
 def preprocess_flight_data(date_str, std_str, sta_str, from_city, to_city):
     date = datetime.strptime(date_str, "%Y-%m-%d")
     std = datetime.strptime(std_str, "%H:%M")
@@ -20,6 +20,7 @@ def preprocess_flight_data(date_str, std_str, sta_str, from_city, to_city):
     std_hour = round(std.hour + std.minute / 60, 2)
     sta_hour = round(sta.hour + sta.minute / 60, 2)
 
+    # Initialize a dictionary with all cities set to False
     all_cities = {
         "From__AMD": False, "From__ATQ": False, "From__BBI": False, "From__BDQ": False,
         "From__BHO": False, "From__BLR": True, "From__BOM": False, "From__CCJ": False,
@@ -46,67 +47,62 @@ def preprocess_flight_data(date_str, std_str, sta_str, from_city, to_city):
 
     return pd.DataFrame([flight_data])
 
-@app.route("/", methods=["POST"])
+@app.route("/", methods=["GET", "POST"])
 def index():
     prediction = None
     prediction_message = ""
-    status = None
-    try:
-        data = request.get_json()
+    
+    if request.method == "POST":
+        date_str = request.form["date"]
+        std_str = request.form["std"]
+        sta_str = request.form["sta"]
+        from_city = request.form["from_city"]
+        to_city = request.form["to_city"]
 
-        # Validate input data
-        date_str = data.get("date")
-        std_str = data.get("std")
-        sta_str = data.get("sta")
-        from_city = data.get("from_city")
-        to_city = data.get("to_city")
+        # Check for same airport
+        if from_city == to_city:
+            prediction_message = "Error: Departure and arrival airports cannot be the same."
+            return render_template('index.html', prediction_message=prediction_message, prediction=prediction)
 
-        # Check for missing fields
-        if not all([date_str, std_str, sta_str, from_city, to_city]):
-            raise BadRequest("Missing required fields.")
+        # Check for same time
+        if std_str == sta_str:
+            prediction_message = "Error: Scheduled departure time and scheduled arrival time cannot be the same."
+            return render_template('index.html', prediction_message=prediction_message, prediction=prediction)
 
-        # Validate date format
-        try:
-            datetime.strptime(date_str, "%Y-%m-%d")
-        except ValueError:
-            raise BadRequest("Invalid date format. Use YYYY-MM-DD.")
+        # Check if the date is today or in the future
+        today = datetime.today().date()
+        input_date = datetime.strptime(date_str, "%Y-%m-%d").date()
 
-        # Validate time format
-        for time_str in [std_str, sta_str]:
-            try:
-                datetime.strptime(time_str, "%H:%M")
-            except ValueError:
-                raise BadRequest(f"Invalid time format: {time_str}. Use HH:MM.")
+        if input_date < today:
+            prediction_message = "Error: The chosen date cannot be in the past."
+            return render_template('index.html', prediction_message=prediction_message, prediction=prediction)
 
-        # Validate city names (you can customize this based on your requirements)
-        valid_cities = ["AMD", "ATQ", "BBI", "BDQ", "BHO", "BLR", "BOM", "CCJ", "CCU", 
-                        "CJB", "COK", "DEL", "GAU", "GOI", "GOX", "HYD", "IDR", 
-                        "IXA", "IXC", "IXJ", "IXL", "IXR", "JAI", "JDH", "LKO", 
-                        "MAA", "PAT", "PNQ", "RAJ", "RDP", "SXR", "TLS", "TRV", 
-                        "UDR", "AGR", "GAY", "NAG", "IXM", "IXS", "STV"]
-        
-        if from_city not in valid_cities or to_city not in valid_cities:
-            raise BadRequest(f"Invalid city names: {from_city}, {to_city}.")
+        std_time = datetime.strptime(std_str, "%H:%M")
+        sta_time = datetime.strptime(sta_str, "%H:%M")
+        # Check if flight time is more than 20 minutes using absolute difference
+        if abs((sta_time - std_time).total_seconds()) < 60 * 60:  # 20 minutes in seconds
+            prediction_message = "Error: Flight time is incorrect Please use correct time"
+            return render_template('index.html', prediction_message=prediction_message, prediction=prediction)
 
-        # Process flight data
+        # Process the flight data
         flight_df = preprocess_flight_data(date_str, std_str, sta_str, from_city, to_city)
         scaled_data = scaler.transform(flight_df)
         input_data_pca = pca.transform(scaled_data)
-        prediction = model.predict(input_data_pca)[0]
-
+        prediction = model.predict(input_data_pca)[0]  
+        
         if prediction == 0:
-            status = "on-time"
+            prediction_message = (
+                f"The flights on {date_str} "
+                f"at {std_str} from <span class='highlight'>{from_city}</span> "
+                f"to <span class='highlight'>{to_city}</span> are <span class='highlight'>On time.</span>"
+            )
         elif prediction == 1:
-            status = "delayed"
+            prediction_message = (
+                f"The flights from <span class='highlight'>{from_city}</span> to <span class='highlight'>{to_city}</span> "
+                f"could be <span class='highlight'>delayed</span> on {date_str} at {std_str}."
+            )
 
-        return jsonify({
-            "status": status,
-        })
-
-    except BadRequest as e:
-        return jsonify({"error": str(e)}), 400
-    except Exception as e:
-        return jsonify({"error": "An error occurred while processing the request."}), 500
+    return render_template('index.html', prediction_message=prediction_message, prediction=prediction)
 
 # if __name__ == "__main__":
 #     app.run(debug=True)
