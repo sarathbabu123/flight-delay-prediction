@@ -46,9 +46,10 @@ def preprocess_flight_data(date_str, std_str, sta_str, from_city, to_city):
 
     return pd.DataFrame([flight_data])
 
-@app.route("/predict", methods=["POST"])
-def predict():
+@app.route("/", methods=["POST"])
+def index():
     prediction = None
+    prediction_message = ""
     status = None
     try:
         data = request.get_json()
@@ -77,7 +78,7 @@ def predict():
             except ValueError:
                 raise BadRequest(f"Invalid time format: {time_str}. Use HH:MM.")
 
-        # Validate city names
+        # Validate city names (you can customize this based on your requirements)
         valid_cities = ["AMD", "ATQ", "BBI", "BDQ", "BHO", "BLR", "BOM", "CCJ", "CCU", 
                         "CJB", "COK", "DEL", "GAU", "GOI", "GOX", "HYD", "IDR", 
                         "IXA", "IXC", "IXJ", "IXL", "IXR", "JAI", "JDH", "LKO", 
